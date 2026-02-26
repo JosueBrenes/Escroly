@@ -1,40 +1,73 @@
-## Escrowly
+# Anchor
 
-Small “product surface” demo for **Trustless Work**: a clean escrow UX with a minimal flow (request → wallet signs XDR → submit).
+Decentralized trust infrastructure for rental deposits. Programmable escrow with clear rules and verifiable evidence — no arbitrary charges, no disputes.
+
+Built with [Trustless Work](https://docs.trustlesswork.com) on the Stellar network.
 
 ## Getting Started
-
-Install dependencies and run the dev server:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-### Routes
-
-- `/`: Landing page
-- `/use-cases-by-industry`: Use cases index
-- `/use-cases-by-industry/freelance-marketplace`: Marketplace escrow demo
-
-## Trustless Work (Escrow React SDK)
-
-This repo is wired with the Trustless Work React SDK provider (`TrustlessWorkConfig`).
-
-- **Provider**: `src/trustless-work-provider.tsx`
-- **Mounted in**: `src/app/layout.tsx`
-- **Demo route**: `/use-cases-by-industry` (includes a read-only example calling `useGetEscrowsFromIndexerByRole`)
-
-### Env vars
+### Environment Variables
 
 Copy `.env.example` to `.env.local` and set:
 
-- `NEXT_PUBLIC_API_KEY`: optional for read-only calls; required for most write flows.
-- `NEXT_PUBLIC_TW_NETWORK`: `development` (default) or `mainnet`.
+- `NEXT_PUBLIC_API_KEY` — Required for most SDK operations.
+- `NEXT_PUBLIC_TW_NETWORK` — `development` (default) or `mainnet`.
 
-### Docs
+## Routes
 
-- Trustless Work docs: `https://docs.trustlesswork.com`
-- Testnet API Swagger: `https://dev.api.trustlesswork.com/docs`
+| Route | Description |
+|---|---|
+| `/` | Landing page |
+| `/how-it-works` | Step-by-step escrow flow |
+| `/dashboard` | View and manage your deposits |
+| `/deposit/new` | Create a new deposit escrow |
+| `/deposit/[id]` | Deposit detail, actions, and status |
+
+## Project Structure
+
+```
+src/
+├── app/                          Pages (thin, import from modules)
+├── modules/
+│   ├── landing/ui/               Landing page components
+│   ├── how-it-works/ui/          How It Works components
+│   ├── dashboard/
+│   │   ├── ui/                   Dashboard components
+│   │   ├── hooks/                useEscrows
+│   │   └── types/
+│   ├── deposit/
+│   │   ├── ui/                   Deposit form, detail, actions
+│   │   ├── hooks/                useDepositForm, useDepositDetail, useDepositActions
+│   │   └── types/
+│   └── wallet/
+│       ├── ui/                   WalletButton
+│       ├── hooks/                useWallet
+│       ├── providers/            WalletProvider
+│       └── lib/                  wallet-kit, validators, trustlines
+├── shared/
+│   ├── ui/                       Reusable UI components (Button, Input, Badge, etc.)
+│   ├── layout/                   Navbar
+│   └── lib/                      Utilities (cn)
+└── providers/                    TrustlessWorkProvider
+```
+
+## Tech Stack
+
+- **Next.js 16** (App Router)
+- **React 19**
+- **TypeScript 5**
+- **Tailwind CSS 4**
+- **Trustless Work SDK** (`@trustless-work/escrow`)
+- **Stellar Wallet Kit** (`@creit.tech/stellar-wallets-kit`)
+
+## Docs
+
+- [Trustless Work Documentation](https://docs.trustlesswork.com)
+- [Testnet API Swagger](https://dev.api.trustlesswork.com/docs)
