@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { TrustlessWorkProvider } from "@/trustless-work-provider";
-import { WalletProvider } from "@/components/tw-blocks/providers/WalletProvider";
+import { TrustlessWorkProvider } from "@/providers/trustless-work-provider";
+import { WalletProvider } from "@/modules/wallet/providers/wallet-provider";
+import { Navbar } from "@/shared/layout/navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Escrowly — trustless escrow flows",
+  title: "Anchor — Decentralized trust for rental deposits",
   description:
-    "A tiny product demo: simple, professional escrow UX powered by Trustless Work.",
+    "Programmable escrow, clear rules, and verifiable evidence that eliminate deposit disputes without changing payment flows.",
 };
 
 export default function RootLayout({
@@ -31,7 +32,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <TrustlessWorkProvider>
-          <WalletProvider>{children}</WalletProvider>
+          <WalletProvider>
+            <Navbar />
+            <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+          </WalletProvider>
         </TrustlessWorkProvider>
       </body>
     </html>
