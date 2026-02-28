@@ -1,17 +1,20 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useWalletContext } from "@/modules/wallet/providers/wallet-provider";
+import { useViewRole } from "@/modules/dashboard/hooks/use-view-role";
 import { useDepositForm } from "@/modules/deposit/hooks/use-deposit-form";
 import { NotConnected } from "@/modules/dashboard/ui/not-connected";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
-import { Anchor, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { Anchor, ArrowLeft, Loader2, CheckCircle2, Building2 } from "lucide-react";
 
 export function DepositFormView() {
   const router = useRouter();
   const { walletAddress } = useWalletContext();
+  const [viewRole] = useViewRole();
   const {
     form,
     step,
@@ -21,13 +24,48 @@ export function DepositFormView() {
     updateField,
     handleSubmit,
     reset,
+    setServiceProviderAsWallet,
   } = useDepositForm(walletAddress);
+
+  const isHotel = viewRole === "hotel";
+
+  useEffect(() => {
+    if (isHotel && walletAddress) setServiceProviderAsWallet();
+  }, [isHotel, walletAddress, setServiceProviderAsWallet]);
 
   if (!walletAddress) {
     return (
       <div className="bg-white">
         <div className="mx-auto max-w-2xl px-6">
-          <NotConnected message="You need to connect a Stellar wallet to create a deposit escrow." />
+          <NotConnected message="Conecta tu wallet Stellar para crear un depósito en escrow." />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isHotel) {
+    return (
+      <div className="flex flex-col bg-white">
+        <div className="mx-auto max-w-2xl px-6 py-10">
+          <Link
+            href="/dashboard"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver al Dashboard
+          </Link>
+          <div className="flex flex-col items-center gap-4 rounded-2xl border border-amber-100 bg-amber-50/50 p-10 text-center">
+            <Building2 className="h-12 w-12 text-amber-600" />
+            <h2 className="text-xl font-bold text-gray-900">
+              Solo el hotel o la entidad puede crear depósitos
+            </h2>
+            <p className="text-sm text-gray-600">
+              Cambia tu vista a &quot;Hotel / Entidad&quot; en el Dashboard si eres el propietario.
+            </p>
+            <Button asChild className="cursor-pointer bg-[#1a56db] text-white hover:bg-[#1545b5]">
+              <Link href="/dashboard">Ir al Dashboard</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -41,7 +79,7 @@ export function DepositFormView() {
           className="mb-6 inline-flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          Volver al Dashboard
         </Link>
 
         {step === "success" ? (
@@ -49,10 +87,9 @@ export function DepositFormView() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
               <CheckCircle2 className="h-8 w-8 text-emerald-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Deposit Created</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Depósito creado</h2>
             <p className="text-gray-500">
-              Your escrow deposit has been deployed on-chain. The tenant can now
-              fund it.
+              El escrow está desplegado. El usuario puede depositar lo pactado.
             </p>
             {contractId && (
               <p className="break-all rounded-xl bg-gray-50 px-4 py-2 font-mono text-xs text-gray-500">
@@ -65,7 +102,7 @@ export function DepositFormView() {
                   onClick={() => router.push(`/deposit/${contractId}`)}
                   className="cursor-pointer gap-2 bg-[#1a56db] text-white hover:bg-[#1545b5]"
                 >
-                  View Deposit
+                  Ver depósito
                 </Button>
               )}
               <Button
@@ -73,7 +110,7 @@ export function DepositFormView() {
                 onClick={reset}
                 className="cursor-pointer border-gray-200 text-gray-700 hover:bg-gray-50"
               >
-                Create Another
+                Crear otro
               </Button>
             </div>
           </div>
@@ -85,10 +122,10 @@ export function DepositFormView() {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">
-                  Create Deposit Escrow
+                  Crear depósito en escrow (Hotel)
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Define the terms for a new rental deposit.
+                  Define el monto y el usuario (inquilino) que depositará.
                 </p>
               </div>
             </div>
@@ -96,16 +133,16 @@ export function DepositFormView() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <div className="space-y-4">
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Deposit Details
+                  Detalles del depósito
                 </p>
 
                 <div className="space-y-1.5">
                   <label htmlFor="title" className="text-sm font-medium text-gray-700">
-                    Title
+                    Título
                   </label>
                   <Input
                     id="title"
-                    placeholder="e.g. Apartment deposit — March 2026"
+                    placeholder="Ej. Depósito apartamento — Marzo 2026"
                     value={form.title}
                     onChange={updateField("title")}
                     className="border-gray-200 bg-gray-50/50 focus-visible:ring-[#1a56db]"
@@ -115,11 +152,11 @@ export function DepositFormView() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="description" className="text-sm font-medium text-gray-700">
-                    Description <span className="text-gray-400">(optional)</span>
+                    Descripción <span className="text-gray-400">(opcional)</span>
                   </label>
                   <Input
                     id="description"
-                    placeholder="Conditions, property address, notes..."
+                    placeholder="Condiciones, dirección, notas..."
                     value={form.description}
                     onChange={updateField("description")}
                     className="border-gray-200 bg-gray-50/50 focus-visible:ring-[#1a56db]"
@@ -128,7 +165,7 @@ export function DepositFormView() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="amount" className="text-sm font-medium text-gray-700">
-                    Deposit Amount (USDC)
+                    Cantidad del depósito (USDC)
                   </label>
                   <Input
                     id="amount"
@@ -146,29 +183,30 @@ export function DepositFormView() {
 
               <div className="space-y-4 pt-2">
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Parties Involved
+                  Partes
                 </p>
 
                 <div className="space-y-1.5">
                   <label htmlFor="serviceProvider" className="text-sm font-medium text-gray-700">
-                    Property Owner Address
+                    Dirección del hotel (tu wallet)
                   </label>
                   <Input
                     id="serviceProvider"
-                    placeholder="G... (Stellar address)"
+                    placeholder="G..."
                     value={form.serviceProvider}
                     onChange={updateField("serviceProvider")}
-                    className="border-gray-200 bg-gray-50/50 font-mono text-xs focus-visible:ring-[#1a56db]"
+                    readOnly={isHotel}
+                    className="border-gray-200 bg-gray-100 font-mono text-xs focus-visible:ring-[#1a56db]"
                     required
                   />
                   <p className="text-xs text-gray-400">
-                    Receives funds if damage is proven.
+                    Recibe fondos si se acreditan daños. Fijado a tu dirección.
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label htmlFor="receiver" className="text-sm font-medium text-gray-700">
-                    Tenant Address
+                    Dirección del usuario (inquilino)
                   </label>
                   <Input
                     id="receiver"
@@ -179,14 +217,13 @@ export function DepositFormView() {
                     required
                   />
                   <p className="text-xs text-gray-400">
-                    Receives the deposit back if there are no incidents.
+                    Recibe el depósito de vuelta si no hay incidencias.
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label htmlFor="disputeResolver" className="text-sm font-medium text-gray-700">
-                    Dispute Resolver{" "}
-                    <span className="text-gray-400">(optional)</span>
+                    Dispute Resolver <span className="text-gray-400">(opcional)</span>
                   </label>
                   <Input
                     id="disputeResolver"
@@ -196,7 +233,7 @@ export function DepositFormView() {
                     className="border-gray-200 bg-gray-50/50 font-mono text-xs focus-visible:ring-[#1a56db]"
                   />
                   <p className="text-xs text-gray-400">
-                    Neutral third party who resolves disputes.
+                    Tercero neutral que resuelve disputas.
                   </p>
                 </div>
               </div>
@@ -219,7 +256,7 @@ export function DepositFormView() {
                     Signing Transaction...
                   </>
                 ) : (
-                  "Create Deposit Escrow"
+                  "Crear depósito en escrow"
                 )}
               </Button>
             </form>

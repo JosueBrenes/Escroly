@@ -8,6 +8,7 @@ import { useDepositActions } from "@/modules/deposit/hooks/use-deposit-actions";
 import { getStatusDisplay } from "@/modules/deposit/ui/deposit-status";
 import { RoleRow } from "@/modules/deposit/ui/role-row";
 import { DepositActions } from "@/modules/deposit/ui/deposit-actions";
+import { getDisputeJustification } from "@/modules/deposit/types";
 import { NotConnected } from "@/modules/dashboard/ui/not-connected";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
@@ -42,7 +43,7 @@ export function DepositDetailView() {
     return (
       <div className="bg-white">
         <div className="mx-auto max-w-3xl px-6">
-          <NotConnected message="Connect a Stellar wallet to view this deposit." />
+          <NotConnected message="Conecta tu wallet Stellar para ver este depósito." />
         </div>
       </div>
     );
@@ -73,21 +74,33 @@ export function DepositDetailView() {
           className="mb-6 inline-flex items-center gap-1 text-sm text-gray-400 transition-colors hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
+          Volver al Dashboard
         </Link>
 
         {loading ? (
           <div className="flex flex-col items-center gap-3 py-20 text-gray-400">
             <RefreshCw className="h-6 w-6 animate-spin" />
-            <p className="text-sm">Loading deposit...</p>
+            <p className="text-sm">Cargando depósito...</p>
           </div>
         ) : !escrow ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
             <Ban className="h-8 w-8 text-gray-400" />
-            <h2 className="text-xl font-bold text-gray-900">Deposit not found</h2>
+            <h2 className="text-xl font-bold text-gray-900">Depósito no encontrado</h2>
             <p className="text-sm text-gray-500">
-              {loadError || "This contract ID doesn't match any known escrow."}
+              {loadError || "Este ID de contrato no coincide con ningún escrow."}
             </p>
+            <p className="text-xs text-gray-400">
+              Si acabas de crearlo, espera un momento al indexador y pulsa Actualizar.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchEscrow}
+              className="cursor-pointer gap-2 mt-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Actualizar
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -116,7 +129,7 @@ export function DepositDetailView() {
                 <DollarSign className="h-6 w-6 text-[#1a56db]" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Deposit Amount</p>
+                <p className="text-sm text-gray-500">Cantidad del depósito</p>
                 <p className="text-3xl font-bold text-gray-900">
                   {escrow.amount}{" "}
                   <span className="text-base font-normal text-gray-400">
@@ -126,7 +139,7 @@ export function DepositDetailView() {
               </div>
               {typeof escrow.balance === "number" && (
                 <div className="ml-auto text-right">
-                  <p className="text-xs text-gray-400">Balance</p>
+                  <p className="text-xs text-gray-400">Saldo</p>
                   <p className="text-lg font-semibold text-gray-900">{escrow.balance}</p>
                 </div>
               )}
@@ -134,33 +147,33 @@ export function DepositDetailView() {
 
             {/* Parties */}
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <h3 className="mb-2 text-sm font-bold text-gray-900">Parties</h3>
+              <h3 className="mb-2 text-sm font-bold text-gray-900">Partes</h3>
               <div className="flex flex-col divide-y divide-gray-100">
-                <RoleRow label="Property Owner" address={serviceProvider} icon={Building2} />
-                <RoleRow label="Tenant" address={receiver} icon={User} />
+                <RoleRow label="Hotel / Entidad" address={serviceProvider} icon={Building2} />
+                <RoleRow label="Usuario (inquilino)" address={receiver} icon={User} />
                 <RoleRow label="Dispute Resolver" address={disputeResolver} icon={Scale} />
-                <RoleRow label="Approver" address={approver} icon={FileCheck} />
+                <RoleRow label="Aprobador" address={approver} icon={FileCheck} />
               </div>
             </div>
 
             {/* Your Role */}
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <h3 className="mb-3 text-sm font-bold text-gray-900">Your Role</h3>
+              <h3 className="mb-3 text-sm font-bold text-gray-900">Tu rol</h3>
               <div className="flex flex-wrap gap-2">
                 {isOwner && (
-                  <Badge className="border-0 bg-gray-100 text-gray-700">Property Owner</Badge>
+                  <Badge className="border-0 bg-gray-100 text-gray-700">Hotel / Entidad</Badge>
                 )}
                 {isTenant && (
-                  <Badge className="border-0 bg-gray-100 text-gray-700">Tenant</Badge>
+                  <Badge className="border-0 bg-gray-100 text-gray-700">Usuario</Badge>
                 )}
                 {isResolver && (
                   <Badge className="border-0 bg-gray-100 text-gray-700">Dispute Resolver</Badge>
                 )}
                 {isApprover && !isOwner && !isTenant && (
-                  <Badge className="border-0 bg-gray-100 text-gray-700">Approver</Badge>
+                  <Badge className="border-0 bg-gray-100 text-gray-700">Aprobador</Badge>
                 )}
                 {!isOwner && !isTenant && !isResolver && !isApprover && (
-                  <Badge className="border-0 bg-gray-50 text-gray-400">Observer</Badge>
+                  <Badge className="border-0 bg-gray-50 text-gray-400">Observador</Badge>
                 )}
               </div>
             </div>
@@ -168,7 +181,7 @@ export function DepositDetailView() {
             {/* Milestones */}
             {escrow.milestones.length > 0 && (
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-                <h3 className="mb-3 text-sm font-bold text-gray-900">Conditions</h3>
+                <h3 className="mb-3 text-sm font-bold text-gray-900">Condiciones</h3>
                 <div className="space-y-2">
                   {escrow.milestones.map((m, i) => (
                     <div key={i} className="flex items-start gap-3 rounded-xl bg-gray-50 p-3">
@@ -186,6 +199,24 @@ export function DepositDetailView() {
                 </div>
               </div>
             )}
+
+            {/* Hotel's dispute justification (for resolver) */}
+            {status === "disputed" && (() => {
+              const justification = getDisputeJustification(contractId);
+              if (!justification) return null;
+              return (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-6">
+                  <h3 className="mb-2 text-sm font-bold text-gray-900">
+                    Justificación del hotel
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Cantidad reclamada para el hotel:</span>{" "}
+                    {justification.amountToHotel} {escrow.trustline?.symbol || "USDC"}
+                  </p>
+                  <p className="mt-2 text-sm text-gray-700">{justification.reason}</p>
+                </div>
+              );
+            })()}
 
             {/* Actions */}
             <DepositActions
@@ -210,7 +241,7 @@ export function DepositDetailView() {
             )}
             {actionSuccess && (
               <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-600 ring-1 ring-emerald-100">
-                {actionSuccess} completed successfully.
+                {actionSuccess} completado correctamente.
               </div>
             )}
 
@@ -222,7 +253,7 @@ export function DepositDetailView() {
                 className="cursor-pointer gap-2 text-gray-400 hover:text-gray-900"
               >
                 <RefreshCw className="h-4 w-4" />
-                Refresh Status
+                Actualizar estado
               </Button>
             </div>
           </div>

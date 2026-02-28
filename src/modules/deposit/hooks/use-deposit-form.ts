@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useInitializeEscrow, useSendTransaction } from "@trustless-work/escrow/hooks";
 import type { InitializeSingleReleaseEscrowResponse } from "@trustless-work/escrow/types";
 import { signTransaction } from "@/modules/wallet/lib/wallet-kit";
@@ -24,6 +24,13 @@ export function useDepositForm(walletAddress: string | null) {
     (field: keyof DepositFormData) =>
     (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  /** Set serviceProvider to the connected wallet (for Hotel creating escrow). */
+  const setServiceProviderAsWallet = useCallback(() => {
+    if (walletAddress) {
+      setForm((prev) => ({ ...prev, serviceProvider: walletAddress }));
+    }
+  }, [walletAddress]);
 
   const canSubmit =
     form.title.trim() &&
@@ -96,5 +103,6 @@ export function useDepositForm(walletAddress: string | null) {
     updateField,
     handleSubmit,
     reset,
+    setServiceProviderAsWallet,
   };
 }

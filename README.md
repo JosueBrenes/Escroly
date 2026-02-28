@@ -17,8 +17,10 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Copy `.env.example` to `.env.local` and set:
 
-- `NEXT_PUBLIC_API_KEY` — Required for most SDK operations.
-- `NEXT_PUBLIC_TW_NETWORK` — `development` (default) or `mainnet`.
+- **`NEXT_PUBLIC_API_KEY`** — Required for write flows (deploy, fund, release). Get it from the [Trustless Work BackOffice](https://dapp.trustlesswork.com): connect wallet → Settings → API Keys → choose **Testnet** → Request API Key. Copy it once (it cannot be viewed again).
+- **`NEXT_PUBLIC_TW_NETWORK`** — `development` (testnet) or `mainnet`. Use testnet for local dev.
+
+If you get **401 Unauthorized** on `/deployer/single-release`: ensure the key is in `.env.local`, that you're using a **Testnet** key with `NEXT_PUBLIC_TW_NETWORK=development`, and **restart the dev server** (`npm run dev`) so Next.js inlines the variable.
 
 ## Routes
 

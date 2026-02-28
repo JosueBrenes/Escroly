@@ -11,6 +11,7 @@ import {
 } from "@trustless-work/escrow/hooks";
 import type { GetEscrowsFromIndexerResponse } from "@trustless-work/escrow/types";
 import { signTransaction } from "@/modules/wallet/lib/wallet-kit";
+import { setDisputeJustification } from "@/modules/deposit/types";
 
 export function useDepositActions(
   contractId: string,
@@ -35,6 +36,25 @@ export function useDepositActions(
     return sendTransaction(signedXdr);
   };
 
+  const getErrorMessage = (err: unknown, fallback: string): string => {
+    if (err instanceof Error && err.message) return err.message;
+    const o = err as Record<string, unknown>;
+    if (o?.message && typeof o.message === "string") return o.message;
+    const ax = err as { response?: { data?: unknown; status?: number } };
+    const data = ax.response?.data;
+    if (data != null && typeof data === "object") {
+      const d = data as Record<string, unknown>;
+      const msg = d.message ?? d.error ?? d.msg;
+      if (typeof msg === "string") return msg;
+    }
+    if (typeof data === "string") return data;
+    const status = ax.response?.status;
+    if (status === 400) return "Solicitud inválida. Revisa que la transacción sea correcta.";
+    if (status === 401) return "No autorizado. Revisa tu API key.";
+    if (status && status >= 400) return `Error del servidor (${status}). Intenta de nuevo.`;
+    return fallback;
+  };
+
   const executeAction = async (actionName: string, action: () => Promise<void>) => {
     setActionLoading(actionName);
     setError(null);
@@ -44,7 +64,8 @@ export function useDepositActions(
       setActionSuccess(actionName);
       await onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : `${actionName} failed.`);
+      if (typeof window !== "undefined") console.error("[Anchor]", actionName, err);
+      setError(getErrorMessage(err, "La acción falló. Abre la consola (F12) para ver el error."));
     } finally {
       setActionLoading(null);
     }
@@ -75,9 +96,12 @@ export function useDepositActions(
       if (releaseRes.unsignedTransaction) await signAndSend(releaseRes.unsignedTransaction);
     });
 
-  const handleDispute = () =>
+  const handleDispute = (justification?: { amountToHotel: number; reason: string }) =>
     executeAction("Dispute", async () => {
       if (!walletAddress) return;
+      if (justification) {
+        setDisputeJustification(contractId, justification);
+      }
       const res = await startDispute(
         { contractId, signer: walletAddress },
         "single-release",
@@ -88,16 +112,33 @@ export function useDepositActions(
   const handleResolve = (escrow: GetEscrowsFromIndexerResponse) =>
     executeAction("Resolve", async () => {
       if (!walletAddress) return;
-      const roles = escrow.roles as { receiver?: string };
+      const roles = (escrow.roles || {}) as Record<string, string | undefined>;
+      const receiver = roles.receiver?.trim() ?? "";
+      const amount = Number(escrow.amount);
+      if (!receiver) throw new Error("Falta la dirección del receptor. No se puede resolver.");
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error("Monto del escrow inválido.");
       const res = await resolveDispute(
         {
           contractId,
           disputeResolver: walletAddress,
-          distributions: [{ address: roles.receiver || "", amount: escrow.amount }],
+          distributions: [{ address: receiver, amount }],
         },
         "single-release",
       );
-      if (res.unsignedTransaction) await signAndSend(res.unsignedTransaction);
+      const xdr = res?.unsignedTransaction ?? (res as { unsignedTransaction?: string })?.unsignedTransaction;
+      if (!xdr) throw new Error("La API no devolvió transacción. Intenta de nuevo.");
+      try {
+        await signAndSend(xdr);
+      } catch (signOrSendErr) {
+        const msg = getErrorMessage(signOrSendErr, "");
+        if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("denied")) {
+          throw new Error("Firma cancelada. Acepta la transacción en Freighter para completar.");
+        }
+        if (msg) throw new Error(msg);
+        throw new Error(
+          "Firma en Freighter o envío de la transacción falló. Abre la consola (F12) para más detalle.",
+        );
+      }
     });
 
   return {
